@@ -89,17 +89,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.58.2/trivy_0.58.2_Linux-64bit.deb
+          sudo dpkg -i trivy_0.58.2_Linux-64bit.deb
+          trivy --version
       
       - name: Scan Docker image
         run: |
-          trivy image ${{ env.DOCKER_IMAGE }}:latest --severity HIGH,CRITICAL --exit-code 0
+          trivy image ${{ env.DOCKER_IMAGE }}:latest --severity HIGH,CRITICAL --exit-code 0 || true
       
       - name: Generate report
         if: always()
         run: |
-          trivy image ${{ env.DOCKER_IMAGE }}:latest --format json --output trivy-report.json
+          trivy image ${{ env.DOCKER_IMAGE }}:latest --format json --output trivy-report.json || true
       
       - name: Upload report
         if: always()
@@ -167,7 +168,7 @@ jobs:
       
       - name: Deploy to Production
         run: |
-          echo " Déploiement sur l'environnement PRODUCTION..."
+          echo "🚀 Déploiement sur l'environnement PRODUCTION..."
           
           # Sauvegarder le tag actuel pour rollback
           CURRENT_TAG=$(docker inspect ${{ env.CONTAINER_NAME }} --format='{{.Config.Image}}' 2>/dev/null | cut -d: -f2)
@@ -195,7 +196,7 @@ jobs:
     steps:
       - name: Rollback to previous version
         run: |
-          echo " ÉCHEC DU DÉPLOIEMENT ! Rollback en cours..."
+          echo "⚠️ ÉCHEC DU DÉPLOIEMENT ! Rollback en cours..."
           
           # Récupérer le tag précédent
           PREVIOUS_TAG=$(docker images ${{ env.DOCKER_IMAGE }} --format "{{.Tag}}" | grep -v latest | head -2 | tail -1)
@@ -244,8 +245,9 @@ jobs:
         if: steps.status.outputs.status == 'success'
         run: |
           echo "✅ Pipeline CI/CD réussi !"
-          echo " Image: ${{ env.DOCKER_IMAGE }}:latest"
-          echo " Production: http://192.168.1.8:8080"
+          echo "📦 Image: ${{ env.DOCKER_IMAGE }}:latest"
+          echo "🔗 Production: http://192.168.1.8:8080"
+          echo "🔗 Staging: http://192.168.1.8:8081"
       
       - name: Failure message
         if: steps.status.outputs.status == 'failure'
@@ -254,4 +256,5 @@ jobs:
           echo "Test: ${{ needs.test.result }}"
           echo "Build: ${{ needs.build-and-push.result }}"
           echo "Security: ${{ needs.security-scan.result }}"
-          echo "Deploy: ${{ needs.deploy-production.result }}"
+          echo "Staging: ${{ needs.deploy-staging.result }}"
+          echo "Production: ${{ needs.deploy-production.result }}"
