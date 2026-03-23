@@ -12,7 +12,6 @@ env:
   APP_PORT: 8080
 
 jobs:
-  # JOB 1 : TESTS
   test:
     name: Tests Maven
     runs-on: ubuntu-latest
@@ -31,7 +30,6 @@ jobs:
       - name: Run tests
         run: mvn test
 
-  # JOB 2 : BUILD & PUSH DOCKER
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -63,8 +61,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # JOB 3 : DÉPLOIEMENT SSH
-    deploy:
+  deploy:
     name: Déploiement sur serveur
     runs-on: self-hosted
     needs: build-and-push
