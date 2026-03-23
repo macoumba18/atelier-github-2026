@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
@@ -12,6 +12,9 @@ env:
   APP_PORT: 8080
 
 jobs:
+  # ====================================================
+  # JOB 1 : TESTS
+  # ====================================================
   test:
     name: Tests Maven
     runs-on: ubuntu-latest
@@ -27,14 +30,24 @@ jobs:
           distribution: 'temurin'
           cache: maven
       
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      
       - name: Run tests
         run: mvn test
 
+  # ====================================================
+  # JOB 2 : BUILD & PUSH DOCKER
+  # ====================================================
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     
     steps:
       - name: Checkout code
@@ -58,14 +71,54 @@ jobs:
           tags: |
             ${{ env.DOCKER_IMAGE }}:latest
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Déploiement sur serveur
-    runs-on: self-hosted
+  # ====================================================
+  # JOB 3 : SCAN DE SÉCURITÉ (TRIVY)
+  # ====================================================
+  security-scan:
+    name: Scan de sécurité (Trivy)
+    runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
+      
+      - name: Scan Docker image
+        run: |
+          trivy image ${{ env.DOCKER_IMAGE }}:latest --severity HIGH,CRITICAL --exit-code 0
+      
+      - name: Generate report
+        if: always()
+        run: |
+          trivy image ${{ env.DOCKER_IMAGE }}:latest --format json --output trivy-report.json
+      
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+
+  # ====================================================
+  # JOB 4 : DÉPLOIEMENT STAGING
+  # ====================================================
+  deploy-staging:
+    name: Déploiement Staging
+    runs-on: self-hosted
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: http://192.168.1.8:8081
     
     steps:
       - name: Checkout code
@@ -77,24 +130,128 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - name: Deploy application
+      - name: Deploy to Staging
         run: |
-          echo "🔄 Arrêt de l'ancien conteneur..."
-          docker stop springboot-app || true
-          docker rm springboot-app || true
-          
-          echo "📥 Téléchargement de la nouvelle image..."
+          echo "🔄 Déploiement sur l'environnement STAGING..."
+          docker stop springboot-app-staging || true
+          docker rm springboot-app-staging || true
           docker pull ${{ env.DOCKER_IMAGE }}:latest
-          
-          echo "🚀 Démarrage du nouveau conteneur..."
           docker run -d \
-            --name springboot-app \
+            --name springboot-app-staging \
+            --restart unless-stopped \
+            -p 8081:8080 \
+            ${{ env.DOCKER_IMAGE }}:latest
+          echo "✅ Staging déployé sur http://192.168.1.8:8081"
+
+  # ====================================================
+  # JOB 5 : DÉPLOIEMENT PRODUCTION
+  # ====================================================
+  deploy-production:
+    name: Déploiement Production
+    runs-on: self-hosted
+    needs: [build-and-push, security-scan]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: http://192.168.1.8:8080
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Deploy to Production
+        run: |
+          echo " Déploiement sur l'environnement PRODUCTION..."
+          
+          # Sauvegarder le tag actuel pour rollback
+          CURRENT_TAG=$(docker inspect ${{ env.CONTAINER_NAME }} --format='{{.Config.Image}}' 2>/dev/null | cut -d: -f2)
+          echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
+          
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
+          docker pull ${{ env.DOCKER_IMAGE }}:latest
+          docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
             --restart unless-stopped \
             -p 8080:8080 \
             ${{ env.DOCKER_IMAGE }}:latest
+          echo "✅ Production déployée sur http://192.168.1.8:8080"
+
+  # ====================================================
+  # JOB 6 : ROLLBACK EN CAS D'ÉCHEC
+  # ====================================================
+  rollback:
+    name: Rollback automatique
+    runs-on: self-hosted
+    needs: [deploy-production]
+    if: failure()
+    
+    steps:
+      - name: Rollback to previous version
+        run: |
+          echo " ÉCHEC DU DÉPLOIEMENT ! Rollback en cours..."
           
-          echo "🧹 Nettoyage des anciennes images..."
-          docker image prune -f
+          # Récupérer le tag précédent
+          PREVIOUS_TAG=$(docker images ${{ env.DOCKER_IMAGE }} --format "{{.Tag}}" | grep -v latest | head -2 | tail -1)
           
-          echo "✅ Déploiement réussi !"
-          echo "🌐 Application disponible sur http://192.168.1.8:8080"
+          if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "null" ]; then
+            echo "🔄 Rollback vers $PREVIOUS_TAG"
+            docker stop ${{ env.CONTAINER_NAME }} || true
+            docker rm ${{ env.CONTAINER_NAME }} || true
+            docker run -d \
+              --name ${{ env.CONTAINER_NAME }} \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              ${{ env.DOCKER_IMAGE }}:$PREVIOUS_TAG
+            echo "✅ Rollback réussi vers $PREVIOUS_TAG"
+          else
+            echo "❌ Aucune version précédente trouvée"
+            exit 1
+          fi
+      
+      - name: Send rollback notification
+        run: |
+          echo "📧 Rollback effectué suite à l'échec du déploiement"
+
+  # ====================================================
+  # JOB 7 : NOTIFICATION
+  # ====================================================
+  notify:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [test, build-and-push, security-scan, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Check status
+        id: status
+        run: |
+          if [ "${{ needs.test.result }}" == "success" ] && \
+             [ "${{ needs.build-and-push.result }}" == "success" ] && \
+             [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Success message
+        if: steps.status.outputs.status == 'success'
+        run: |
+          echo "✅ Pipeline CI/CD réussi !"
+          echo " Image: ${{ env.DOCKER_IMAGE }}:latest"
+          echo " Production: http://192.168.1.8:8080"
+      
+      - name: Failure message
+        if: steps.status.outputs.status == 'failure'
+        run: |
+          echo "❌ Pipeline CI/CD échoué !"
+          echo "Test: ${{ needs.test.result }}"
+          echo "Build: ${{ needs.build-and-push.result }}"
+          echo "Security: ${{ needs.security-scan.result }}"
+          echo "Deploy: ${{ needs.deploy-production.result }}"
