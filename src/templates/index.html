@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .message {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .message h2 {
+            color: #16a34a;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .message p {
+            color: #166534;
+            font-size: 1.2rem;
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .info-card h3 {
+            color: #1e293b;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #667eea;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .info-value {
+            color: #1e293b;
+            font-family: 'Courier New', monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-prod {
+            background: #dc2626;
+            color: white;
+        }
+
+        .badge-staging {
+            background: #eab308;
+            color: #1e293b;
+        }
+
+        .badge-dev {
+            background: #22c55e;
+            color: white;
+        }
+
+        .footer {
+            background: #f1f5f9;
+            padding: 20px 40px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .tech-tag {
+            background: #e2e8f0;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            color: #475569;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Spring Boot Application</h1>
+            <p>CI/CD Pipeline avec GitHub Actions</p>
+        </div>
+
+        <div class="content">
+            <div class="message">
+                <h2>✨ Hello, World! ✨</h2>
+                <p>L'application fonctionne parfaitement !</p>
+            </div>
+
+            <div class="info-card">
+                <h3>📊 Informations système</h3>
+                <div class="info-item">
+                    <span class="info-label">🌍 Environnement</span>
+                    <span class="info-value">
+                        <span th:if="${environment == 'prod'}" class="badge badge-prod">PRODUCTION</span>
+                        <span th:if="${environment == 'staging'}" class="badge badge-staging">STAGING</span>
+                        <span th:if="${environment == 'dev'}" class="badge badge-dev">DEVELOPMENT</span>
+                        <span th:unless="${environment == 'prod' or environment == 'staging' or environment == 'dev'}" th:text="${environment}"></span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🔌 Port serveur</span>
+                    <span class="info-value" th:text="${serverPort}"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">⏰ Horodatage</span>
+                    <span class="info-value" th:text="${timestamp}"></span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>⚙️ Pipeline CI/CD</h3>
+                <div class="info-item">
+                    <span class="info-label">✅ Tests Maven</span>
+                    <span class="info-value">✓ Réussis</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🐳 Build Docker</span>
+                    <span class="info-value">✓ Multi-stage (98 MB)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">🔒 Scan Trivy</span>
+                    <span class="info-value">✓ Aucune vulnérabilité critique</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">📦 Docker Hub</span>
+                    <span class="info-value">✓ elhadji10/springboot-app:latest</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3>🛠️ Stack technique</h3>
+                <div class="tech-stack">
+                    <span class="tech-tag">Spring Boot 3.x</span>
+                    <span class="tech-tag">Java 17</span>
+                    <span class="tech-tag">Maven</span>
+                    <span class="tech-tag">Docker</span>
+                    <span class="tech-tag">GitHub Actions</span>
+                    <span class="tech-tag">Trivy</span>
+                    <span class="tech-tag">Thymeleaf</span>
+                </div>
+            </div>
+
+            <button onclick="location.reload()">🔄 Actualiser</button>
+        </div>
+
+        <div class="footer">
+            <p>CI/CD Pipeline | Déploiement automatique | Staging / Production</p>
+            <p style="margin-top: 10px;">📧 elhadji10@gmail.com | 🐳 Docker Hub: elhadji10/springboot-app</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -17,7 +17,8 @@
 @REM specific language governing permissions and limitations
 @REM under the License.
 @REM ----------------------------------------------------------------------------
-
+set JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot
+set PATH=%JAVA_HOME%\bin;%PATH%
 @REM ----------------------------------------------------------------------------
 @REM Apache Maven Wrapper startup batch script, version 3.3.4
 @REM
