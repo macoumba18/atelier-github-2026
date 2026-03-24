@@ -11,6 +11,7 @@ RUN mvn dependency:go-offline -B
 
 # Copier le code source et compiler
 COPY src ./src
+RUN rm -f src/main/resources/application-prod.properties src/main/resources/application-staging.properties
 RUN mvn clean package -DskipTests -B
 
 # ====================================================
