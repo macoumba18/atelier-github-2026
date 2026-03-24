@@ -14,20 +14,23 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            overflow: hidden;
         }
 
         .container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            max-width: 800px;
-            width: 100%;
+            width: 90%;
+            max-width: 900px;
+            height: 90vh;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
             animation: fadeIn 0.5s ease-out;
         }
 
@@ -45,64 +48,68 @@
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 40px;
+            padding: 20px;
             text-align: center;
+            border-radius: 20px 20px 0 0;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
         }
 
         .header p {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             opacity: 0.9;
         }
 
         .content {
-            padding: 40px;
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .message {
             background: #f0fdf4;
             border-left: 4px solid #22c55e;
-            padding: 20px;
+            padding: 12px;
             border-radius: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
+            text-align: center;
         }
 
         .message h2 {
             color: #16a34a;
-            font-size: 1.8rem;
-            margin-bottom: 10px;
+            font-size: 1.5rem;
+            margin-bottom: 5px;
         }
 
         .message p {
             color: #166534;
-            font-size: 1.2rem;
+            font-size: 1rem;
         }
 
         .info-card {
             background: #f8fafc;
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
             border: 1px solid #e2e8f0;
         }
 
         .info-card h3 {
             color: #1e293b;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
             border-bottom: 2px solid #667eea;
             display: inline-block;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
         }
 
         .info-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -113,18 +120,20 @@
         .info-label {
             font-weight: 600;
             color: #475569;
+            font-size: 0.9rem;
         }
 
         .info-value {
             color: #1e293b;
             font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
         }
 
         .badge {
             display: inline-block;
-            padding: 5px 12px;
+            padding: 3px 10px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
@@ -145,24 +154,25 @@
 
         .footer {
             background: #f1f5f9;
-            padding: 20px 40px;
+            padding: 12px;
             text-align: center;
             color: #64748b;
-            font-size: 0.85rem;
+            font-size: 0.7rem;
+            border-radius: 0 0 20px 20px;
         }
 
         .tech-stack {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .tech-tag {
             background: #e2e8f0;
-            padding: 5px 12px;
+            padding: 3px 10px;
             border-radius: 15px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #475569;
         }
 
@@ -170,16 +180,52 @@
             background: #667eea;
             color: white;
             border: none;
-            padding: 10px 24px;
+            padding: 8px 20px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: background 0.3s ease;
-            margin-top: 20px;
+            margin-top: 10px;
+            width: 100%;
         }
 
         button:hover {
             background: #5a67d8;
+        }
+
+        /* Custom scrollbar */
+        .content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .two-columns {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .two-columns .info-card {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 700px) {
+            .two-columns {
+                flex-direction: column;
+            }
+            .two-columns .info-card {
+                margin-bottom: 15px;
+            }
         }
     </style>
 </head>
@@ -196,44 +242,45 @@
                 <p>L'application fonctionne parfaitement !</p>
             </div>
 
-            <div class="info-card">
-                <h3>📊 Informations système</h3>
-                <div class="info-item">
-                    <span class="info-label">🌍 Environnement</span>
-                    <span class="info-value">
-                        <span th:if="${environment == 'prod'}" class="badge badge-prod">PRODUCTION</span>
-                        <span th:if="${environment == 'staging'}" class="badge badge-staging">STAGING</span>
-                        <span th:if="${environment == 'dev'}" class="badge badge-dev">DEVELOPMENT</span>
-                        <span th:unless="${environment == 'prod' or environment == 'staging' or environment == 'dev'}" th:text="${environment}"></span>
-                    </span>
+            <div class="two-columns">
+                <div class="info-card">
+                    <h3>📊 Système</h3>
+                    <div class="info-item">
+                        <span class="info-label">🌍 Environnement</span>
+                        <span class="info-value">
+                            <span th:if="${environment == 'prod'}" class="badge badge-prod">PRODUCTION</span>
+                            <span th:if="${environment == 'staging'}" class="badge badge-staging">STAGING</span>
+                            <span th:unless="${environment == 'prod' or environment == 'staging'}" class="badge badge-dev" th:text="${environment}">DEVELOPMENT</span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🔌 Port serveur</span>
+                        <span class="info-value" th:text="${serverPort}">8080</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">⏰ Horodatage</span>
+                        <span class="info-value" th:text="${timestamp}">2026-03-24</span>
+                    </div>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">🔌 Port serveur</span>
-                    <span class="info-value" th:text="${serverPort}">8080</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">⏰ Horodatage</span>
-                    <span class="info-value" th:text="${timestamp}">2026-03-24</span>
-                </div>
-            </div>
 
-            <div class="info-card">
-                <h3>⚙️ Pipeline CI/CD</h3>
-                <div class="info-item">
-                    <span class="info-label">✅ Tests Maven</span>
-                    <span class="info-value">✓ Réussis</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🐳 Build Docker</span>
-                    <span class="info-value">✓ Multi-stage (98 MB)</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🔒 Scan Trivy</span>
-                    <span class="info-value">✓ Aucune vulnérabilité critique</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📦 Docker Hub</span>
-                    <span class="info-value">✓ elhadji10/springboot-app:latest</span>
+                <div class="info-card">
+                    <h3>⚙️ Pipeline CI/CD</h3>
+                    <div class="info-item">
+                        <span class="info-label">✅ Tests Maven</span>
+                        <span class="info-value">✓ Réussis</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🐳 Build Docker</span>
+                        <span class="info-value">✓ 98 MB</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🔒 Scan Trivy</span>
+                        <span class="info-value">✓ OK</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">📦 Docker Hub</span>
+                        <span class="info-value">✓ latest</span>
+                    </div>
                 </div>
             </div>
 
@@ -254,8 +301,7 @@
         </div>
 
         <div class="footer">
-            <p>CI/CD Pipeline | Déploiement automatique | Staging / Production</p>
-            <p style="margin-top: 10px;">📧 elhadji10@gmail.com | 🐳 Docker Hub: elhadji10/springboot-app</p>
+            <p>CI/CD Pipeline | Déploiement automatique | elhadji10/springboot-app</p>
         </div>
     </div>
 </body>
