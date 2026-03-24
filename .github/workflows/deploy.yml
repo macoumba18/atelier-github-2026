@@ -12,9 +12,6 @@ env:
   APP_PORT: 8080
 
 jobs:
-  # ====================================================
-  # JOB 1 : TESTS
-  # ====================================================
   test:
     name: Tests Maven
     runs-on: ubuntu-latest
@@ -30,19 +27,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
       
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-      
       - name: Run tests
         run: mvn test
 
-  # ====================================================
-  # JOB 2 : BUILD & PUSH DOCKER
-  # ====================================================
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
@@ -71,13 +58,9 @@ jobs:
           tags: |
             ${{ env.DOCKER_IMAGE }}:latest
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
-            ${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ====================================================
-  # JOB 3 : SCAN DE SÉCURITÉ (TRIVY)
-  # ====================================================
   security-scan:
     name: Scan de sécurité (Trivy)
     runs-on: ubuntu-latest
@@ -85,7 +68,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
-      - name: Install Trivy via official repository
+      - name: Install Trivy
         run: |
           sudo apt-get update
           sudo apt-get install -y wget apt-transport-https gnupg
@@ -111,10 +94,7 @@ jobs:
           name: trivy-report
           path: trivy-report.json
 
-  # ====================================================
-  # JOB 4 : DÉPLOIEMENT STAGING
-  # ====================================================
-   deploy-staging:
+  deploy-staging:
     name: Déploiement Staging
     runs-on: self-hosted
     needs: build-and-push
@@ -147,10 +127,7 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:latest
           echo "✅ Staging déployé sur http://192.168.1.8:8081"
 
-  # ====================================================
-  # JOB 5 : DÉPLOIEMENT PRODUCTION
-  # ====================================================
-   deploy-production:
+  deploy-production:
     name: Déploiement Production
     runs-on: self-hosted
     needs: [build-and-push, security-scan]
@@ -182,9 +159,7 @@ jobs:
             -e SPRING_PROFILES_ACTIVE=prod \
             ${{ env.DOCKER_IMAGE }}:latest
           echo "✅ Production déployée sur http://192.168.1.8:8080"
-  # ====================================================
-  # JOB 6 : ROLLBACK EN CAS D'ÉCHEC
-  # ====================================================
+
   rollback:
     name: Rollback automatique
     runs-on: self-hosted
@@ -195,10 +170,7 @@ jobs:
       - name: Rollback to previous version
         run: |
           echo "⚠️ ÉCHEC DU DÉPLOIEMENT ! Rollback en cours..."
-          
-          # Récupérer le tag précédent
           PREVIOUS_TAG=$(docker images ${{ env.DOCKER_IMAGE }} --format "{{.Tag}}" | grep -v latest | head -2 | tail -1)
-          
           if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "null" ]; then
             echo "🔄 Rollback vers $PREVIOUS_TAG"
             docker stop ${{ env.CONTAINER_NAME }} || true
@@ -207,20 +179,14 @@ jobs:
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
               -p 8080:8080 \
+              -e SPRING_PROFILES_ACTIVE=prod \
               ${{ env.DOCKER_IMAGE }}:$PREVIOUS_TAG
             echo "✅ Rollback réussi vers $PREVIOUS_TAG"
           else
             echo "❌ Aucune version précédente trouvée"
             exit 1
           fi
-      
-      - name: Send rollback notification
-        run: |
-          echo "📧 Rollback effectué suite à l'échec du déploiement"
 
-  # ====================================================
-  # JOB 7 : NOTIFICATION
-  # ====================================================
   notify:
     name: Notification
     runs-on: ubuntu-latest
