@@ -114,7 +114,7 @@ jobs:
   # ====================================================
   # JOB 4 : DÉPLOIEMENT STAGING
   # ====================================================
-  deploy-staging:
+   deploy-staging:
     name: Déploiement Staging
     runs-on: self-hosted
     needs: build-and-push
@@ -143,13 +143,14 @@ jobs:
             --name springboot-app-staging \
             --restart unless-stopped \
             -p 8081:8080 \
+            -e SPRING_PROFILES_ACTIVE=staging \
             ${{ env.DOCKER_IMAGE }}:latest
           echo "✅ Staging déployé sur http://192.168.1.8:8081"
 
   # ====================================================
   # JOB 5 : DÉPLOIEMENT PRODUCTION
   # ====================================================
-  deploy-production:
+   deploy-production:
     name: Déploiement Production
     runs-on: self-hosted
     needs: [build-and-push, security-scan]
@@ -171,11 +172,6 @@ jobs:
       - name: Deploy to Production
         run: |
           echo "🚀 Déploiement sur l'environnement PRODUCTION..."
-          
-          # Sauvegarder le tag actuel pour rollback
-          CURRENT_TAG=$(docker inspect ${{ env.CONTAINER_NAME }} --format='{{.Config.Image}}' 2>/dev/null | cut -d: -f2)
-          echo "CURRENT_TAG=$CURRENT_TAG" >> $GITHUB_ENV
-          
           docker stop ${{ env.CONTAINER_NAME }} || true
           docker rm ${{ env.CONTAINER_NAME }} || true
           docker pull ${{ env.DOCKER_IMAGE }}:latest
@@ -183,9 +179,9 @@ jobs:
             --name ${{ env.CONTAINER_NAME }} \
             --restart unless-stopped \
             -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=prod \
             ${{ env.DOCKER_IMAGE }}:latest
           echo "✅ Production déployée sur http://192.168.1.8:8080"
-
   # ====================================================
   # JOB 6 : ROLLBACK EN CAS D'ÉCHEC
   # ====================================================
